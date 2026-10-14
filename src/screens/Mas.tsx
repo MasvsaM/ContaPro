@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { db, getOrCreateCompany, getOrCreateSettings } from '@/database/db'
 import type { Company, Settings } from '@/types'
 
@@ -6,10 +6,15 @@ export default function Mas() {
   const [company, setCompany] = useState<Company | null>(null)
   const [settings, setSettings] = useState<Settings | null>(null)
   const [logoPreview, setLogoPreview] = useState('')
+  const [lastBackup, setLastBackup] = useState<string>('')
 
   async function load() {
     setCompany(await getOrCreateCompany())
     setSettings(await getOrCreateSettings())
+    try {
+      const lb = localStorage.getItem('contapro_last_backup')
+      if (lb) setLastBackup(lb)
+    } catch {}
   }
   useEffect(()=>{load()},[])
 
@@ -42,7 +47,7 @@ export default function Mas() {
     reader.readAsDataURL(file)
   }
 
-  async function exportBackup() {
+  async function collectBackup() {
     const companies = await db.companies.toArray()
     const clients = await db.clients.toArray()
     const quotes = await db.quotes.toArray()
@@ -51,22 +56,56 @@ export default function Mas() {
     const invoiceItems = await db.invoiceItems.toArray()
     const payments = await db.payments.toArray()
     const settings = await db.settings.toArray()
-    const data = { companies, clients, quotes, quoteItems, invoices, invoiceItems, payments, settings, version: 1 }
+    return { companies, clients, quotes, quoteItems, invoices, invoiceItems, payments, settings, version: 1, timestamp: new Date().toISOString() }
+  }
+
+  async function exportBackup() {
+    const data = await collectBackup()
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `contapro-backup-${new Date().toISOString().slice(0,10)}.json`
+    const ts = new Date().toISOString().slice(0,10)
+    a.download = `contapro-backup-${ts}.json`
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
+    try { localStorage.setItem('contapro_last_backup', ts); setLastBackup(ts) } catch {}
+    alert('Respaldo exportado correctamente')
   }
 
-  async function importBackup(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const text = await file.text()
+  async function shareBackup() {
     try {
-      const data = JSON.parse(text)
-      if (!confirm('Esto importará datos. ¿Continuar?')) return
+      const data = await collectBackup()
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const ts = new Date().toISOString().slice(0,10)
+      const file = new File([blob], `contapro-backup-${ts}.json`, { type: 'application/json' })
+      if (navigator.share && (navigator as any).canShare && (navigator as any).canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Respaldo ContaPro' })
+        try { localStorage.setItem('contapro_last_backup', ts); setLastBackup(ts) } catch {}
+        return
+      }
+    } catch (e:any) {}
+    exportBackup()
+  }
+
+  async function saveLocalBackup() {
+    try {
+      const data = await collectBackup()
+      const ts = new Date().toISOString()
+      localStorage.setItem('contapro_backup_json', JSON.stringify(data))
+      localStorage.setItem('contapro_last_backup', ts.slice(0,10))
+      setLastBackup(ts.slice(0,10))
+      alert('Respaldo guardado en este dispositivo')
+    } catch (e:any) {
+      alert('Error al guardar: ' + e.message)
+    }
+  }
+
+  async function restoreLocalBackup() {
+    try {
+      const txt = localStorage.getItem('contapro_backup_json')
+      if (!txt) { alert('No hay respaldo guardado en este dispositivo'); return }
+      if (!confirm('Se reemplazarán TODOS los datos con el respaldo guardado. ¿Continuar?')) return
+      const data = JSON.parse(txt)
       await db.transaction('rw', db.companies, db.clients, db.quotes, db.quoteItems, db.invoices, db.invoiceItems, db.payments, db.settings, async () => {
         await db.companies.clear(); await db.clients.clear(); await db.quotes.clear(); await db.quoteItems.clear(); await db.invoices.clear(); await db.invoiceItems.clear(); await db.payments.clear(); await db.settings.clear()
         if (data.companies) await db.companies.bulkAdd(data.companies)
@@ -78,7 +117,32 @@ export default function Mas() {
         if (data.payments) await db.payments.bulkAdd(data.payments)
         if (data.settings) await db.settings.bulkAdd(data.settings)
       })
-      alert('Importación exitosa')
+      alert('Restauración exitosa')
+      window.location.reload()
+    } catch (e:any) {
+      alert('Error: ' + e.message)
+    }
+  }
+
+  async function importBackup(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const text = await file.text()
+    try {
+      const data = JSON.parse(text)
+      if (!confirm('Se reemplazarán TODOS los datos con este archivo. ¿Continuar?')) return
+      await db.transaction('rw', db.companies, db.clients, db.quotes, db.quoteItems, db.invoices, db.invoiceItems, db.payments, db.settings, async () => {
+        await db.companies.clear(); await db.clients.clear(); await db.quotes.clear(); await db.quoteItems.clear(); await db.invoices.clear(); await db.invoiceItems.clear(); await db.payments.clear(); await db.settings.clear()
+        if (data.companies) await db.companies.bulkAdd(data.companies)
+        if (data.clients) await db.clients.bulkAdd(data.clients)
+        if (data.quotes) await db.quotes.bulkAdd(data.quotes)
+        if (data.quoteItems) await db.quoteItems.bulkAdd(data.quoteItems)
+        if (data.invoices) await db.invoices.bulkAdd(data.invoices)
+        if (data.invoiceItems) await db.invoiceItems.bulkAdd(data.invoiceItems)
+        if (data.payments) await db.payments.bulkAdd(data.payments)
+        if (data.settings) await db.settings.bulkAdd(data.settings)
+      })
+      alert('Importación exitosa. Los datos están sincronizados en este dispositivo')
       window.location.reload()
     } catch (err:any) {
       alert('Error importando: ' + err.message)
@@ -116,21 +180,30 @@ export default function Mas() {
         </div>
       </div>
 
-      <div className="section">Copia de seguridad</div>
+      <div className="section">Copia de seguridad (Sincronizar entre dispositivos)</div>
       <div className="card">
-        <button className="btn" onClick={exportBackup}>Exportar backup (JSON)</button>
-        <div style={{marginTop:10}}>
-          <label className="btn secondary">Importar backup (JSON)
+        <p style={{fontSize:12,color:'var(--muted)',marginTop:0,marginBottom:10}}>
+          Úsalo para tener los mismos datos en tablet y celular. Exporta en un dispositivo → Importa en el otro.
+          {lastBackup && <span> · Último respaldo: {lastBackup}</span>}
+        </p>
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          <button className="btn" onClick={saveLocalBackup}>Guardar respaldo en este dispositivo</button>
+          <button className="btn secondary" onClick={restoreLocalBackup}>Restaurar respaldo guardado aquí</button>
+          <button className="btn" onClick={shareBackup}>Compartir respaldo (Bluetooth/WhatsApp/Drive)</button>
+          <button className="btn secondary" onClick={exportBackup}>Descargar respaldo (.json)</button>
+          <label className="btn secondary">Importar respaldo (.json)
             <input type="file" accept="application/json" style={{display:'none'}} onChange={importBackup}/>
           </label>
         </div>
-        <p style={{fontSize:12,color:'var(--muted)',marginTop:8}}>La importación valida y reemplaza todos los datos. Se recomienda exportar antes.</p>
+        <p style={{fontSize:12,color:'var(--muted)',marginTop:8}}>
+          <strong>Recomendado:</strong> En el dispositivo con datos → "Compartir respaldo" → Envíalo al otro → Ábrelo con ContaPro o usa "Importar respaldo (.json)".
+        </p>
       </div>
 
       <div className="section">Información</div>
       <div className="card">
         <p style={{margin:0,fontSize:13}}>ContaPro v1.0.0</p>
-        <p style={{margin:0,fontSize:12,color:'var(--muted)'}}>Funciona offline. Listo para instalar como PWA.</p>
+        <p style={{margin:0,fontSize:12,color:'var(--muted)'}}>Funciona 100% offline. Datos guardados solo en el dispositivo.</p>
       </div>
     </div>
   )

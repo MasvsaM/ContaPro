@@ -1,14 +1,14 @@
 ﻿:root {
-  --blue: #0868e8;
-  --navy: #073b70;
-  --bg: #f4f7fb;
-  --card: #fff;
-  --text: #17324d;
-  --muted: #718096;
-  --green: #20b26b;
-  --orange: #f6a700;
-  --red: #ef5350;
-  --border: #e3eaf3;
+  --blue: #0b5bcc;
+  --navy: #042b5f;
+  --bg: #f5f8fc;
+  --card: #ffffff;
+  --text: #10243d;
+  --muted: #5b6b82;
+  --green: #0f9a52;
+  --orange: #b57a00;
+  --red: #d32f2f;
+  --border: #d9e2ef;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -133,3 +133,4 @@ body.dark .item, body.dark .form, body.dark .tablewrap table { background: #111b
 body.dark .empty { background: #0f1930; }
 body.dark .sheet { background: #111b33; }
 body.dark .search { background: #0f1930; color: var(--text); border-color: #274376; }
+

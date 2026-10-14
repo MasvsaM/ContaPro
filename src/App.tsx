@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { getOrCreateSettings, getOrCreateCompany } from './database/db'
 import Dashboard from './screens/Dashboard'
 import Clientes from './screens/Clientes'
@@ -30,9 +30,11 @@ export default function App() {
   return (
     <div className="app">
       <header className="top">
-        <div>
+        <div className="top-left">
           <div className="brand">Conta<span>Pro</span></div>
-          <small>Presupuestos • Facturas • Ventas</small>
+        </div>
+        <div className="top-right">
+          <button className={`top-btn ${screen==='mas'?'active':''}`} onClick={()=>setScreen('mas')} aria-label="Configuración">⚙️</button>
         </div>
       </header>
       <main className="content">
@@ -44,13 +46,14 @@ export default function App() {
         {screen==='mas' && <Mas/>}
       </main>
       <nav className="bottom">
-        <button className={`nav ${screen==='inicio'?'active':''}`} onClick={()=>setScreen('inicio')}><b>🏠</b>Inicio</button>
-        <button className={`nav ${screen==='clientes'?'active':''}`} onClick={()=>setScreen('clientes')}><b>👤</b>Clientes</button>
-        <button className={`nav ${screen==='presupuestos'?'active':''}`} onClick={()=>setScreen('presupuestos')}><b>📄</b>Presupuestos</button>
-        <button className={`nav ${screen==='facturas'?'active':''}`} onClick={()=>setScreen('facturas')}><b>🧾</b>Facturas</button>
-        <button className={`nav ${screen==='reportes'?'active':''}`} onClick={()=>setScreen('reportes')}><b>📊</b>Reportes</button>
-        <button className={`nav ${screen==='mas'?'active':''}`} onClick={()=>setScreen('mas')}><b>⋯</b>Más</button>
+        <button className={`nav ${screen==='inicio'?'active':''}`} onClick={()=>setScreen('inicio')}><b>ðŸ </b>Inicio</button>
+        <button className={`nav ${screen==='clientes'?'active':''}`} onClick={()=>setScreen('clientes')}><b>ðŸ‘¤</b>Clientes</button>
+        <button className={`nav ${screen==='presupuestos'?'active':''}`} onClick={()=>setScreen('presupuestos')}><b>ðŸ“„</b>Presupuestos</button>
+        <button className={`nav ${screen==='facturas'?'active':''}`} onClick={()=>setScreen('facturas')}><b>ðŸ§¾</b>Facturas</button>
+        <button className={`nav ${screen==='reportes'?'active':''}`} onClick={()=>setScreen('reportes')}><b>ðŸ“Š</b>Reportes</button>
+        <button className={`nav ${screen==='mas'?'active':''}`} onClick={()=>setScreen('mas')}><b>â‹¯</b>MÃ¡s</button>
       </nav>
     </div>
   )
 }
+

@@ -51,7 +51,6 @@ export default function App() {
         <button className={`nav ${screen==='presupuestos'?'active':''}`} onClick={()=>setScreen('presupuestos')}><b>ðŸ“„</b>Presupuestos</button>
         <button className={`nav ${screen==='facturas'?'active':''}`} onClick={()=>setScreen('facturas')}><b>ðŸ§¾</b>Facturas</button>
         <button className={`nav ${screen==='reportes'?'active':''}`} onClick={()=>setScreen('reportes')}><b>ðŸ“Š</b>Reportes</button>
-        <button className={`nav ${screen==='mas'?'active':''}`} onClick={()=>setScreen('mas')}><b>â‹¯</b>MÃ¡s</button>
       </nav>
     </div>
   )

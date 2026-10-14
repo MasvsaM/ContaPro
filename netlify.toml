@@ -1,4 +1,4 @@
-﻿[build]
+[build]
   command = "npm install --no-audit --no-fund && npx vite build"
   publish = "dist"
 
